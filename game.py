@@ -11,6 +11,7 @@ fps = 30
 white = (255, 255, 255)
 black = (0,   0,   0)
 green = (0, 255,   0)
+bg_color = (73, 183, 200)
 
 player_text = '🤔'
 
@@ -22,7 +23,7 @@ item_cooldown = (120, 180)
 
 
 def main():
-    global window, clock, emoji_font, text_font, small_emoji_font
+    global window, clock, emoji_font, text_font, small_emoji_font, bg_img
     pygame.init()
     window = pygame.display.set_mode((width, height))
     clock = pygame.time.Clock()
@@ -30,6 +31,8 @@ def main():
     small_emoji_font = pygame.font.SysFont('Segoe UI Emoji', 20)
     text_font = pygame.font.Font(None, 50)
     pygame.display.set_caption('My First Pygame!')
+    bg_img = pygame.image.load('assets/background/ocean.png')
+    bg_img = pygame.transform.scale(bg_img, (width, height))
     while True:
         load_screen()
         play()
@@ -101,6 +104,7 @@ def load_screen():
                 if event.key == K_ESCAPE:
                     quit()
         window.fill(white)
+        window.blit(bg_img, (0, 0))
         render_player((i, height / 2))
         pygame.display.update()
         clock.tick(fps)
@@ -118,6 +122,7 @@ def load_screen():
                 if event.key == K_ESCAPE:
                     quit()
         window.fill(white)
+        window.blit(bg_img, (0, 0))
 
         i += 1
         if i < 25:
@@ -131,6 +136,8 @@ def load_screen():
 
 
 def play():
+    bg_img_flipped = pygame.transform.flip(bg_img, True, False)
+
     obstacles = []
     items = []
 
@@ -157,6 +164,8 @@ def play():
     obstacle_counter = 0
     next_item = random.randint(*item_cooldown)
     item_counter = 0
+    bg_x = 0
+    bg_flipped = False
     while True:
         obstacle_counter += 1
         item_counter += 1
@@ -244,7 +253,21 @@ def play():
         if items and items[0][0] < - (item_size[0] / 2):
             items.pop(0)
 
+        # Render screen
         window.fill(white)
+
+        bg_x -= vx
+        if bg_flipped:
+            window.blit(bg_img_flipped, (bg_x, 0))
+            window.blit(bg_img, (width+bg_x, 0))
+        else:
+            window.blit(bg_img, (bg_x, 0))
+            window.blit(bg_img_flipped, (width+bg_x, 0))
+
+        if bg_x <= -width:
+            bg_x += width
+            bg_flipped ^= 1
+
         for pos in obstacles:
             render_obstacle(pos)
         for pos in items:
@@ -259,7 +282,7 @@ def game_over():
     text = text_font.render('Game over', 1, black)
     rect = text.get_rect()
     rect.center = (width/2, height/2)
-    window.fill(white)
+    window.fill(bg_color)
     window.blit(text, rect)
     pygame.display.update()
     while True:
