@@ -1,6 +1,7 @@
 import random
 import pygame
 import math
+import os
 import sys
 from pygame.locals import *
 
@@ -30,6 +31,20 @@ kelp_cooldown = (20, 50)
 kelp_size = (78, 71)
 
 
+def resource_path(relative_path):
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
+
+def load_img(relative_path):
+    return pygame.image.load(resource_path(relative_path))
+
+
 def main():
     global window, clock, emoji_font, text_font, small_emoji_font, bg_img, kelp_img, rock_img
     pygame.init()
@@ -43,13 +58,13 @@ def main():
 
     pygame.display.set_caption('My First Pygame!')
 
-    bg_img = pygame.image.load('assets/background/ocean.png').convert()
+    bg_img = load_img('assets/background/ocean.png').convert()
     bg_img = pygame.transform.scale(bg_img, (width, height))
 
-    kelp_img = pygame.image.load('assets/background/kelp.png').convert_alpha()
+    kelp_img = load_img('assets/background/kelp.png').convert_alpha()
     kelp_img = pygame.transform.scale(kelp_img, kelp_size)
 
-    rock_img = pygame.image.load('assets/background/rock.png').convert_alpha()
+    rock_img = load_img('assets/background/rock.png').convert_alpha()
     rock_img = pygame.transform.scale(rock_img, rock_size)
 
     while True:
