@@ -21,18 +21,37 @@ obstacle_cooldown = (15, 30)  # Min, max frames between two obstacles
 item_text = '⚡'
 item_cooldown = (120, 180)
 
+rock_cooldown = (30, 90)
+# Original size: 705x224
+rock_size = (235, 74)
+
+kelp_cooldown = (20, 50)
+# Original size: 312x283
+kelp_size = (78, 71)
+
 
 def main():
-    global window, clock, emoji_font, text_font, small_emoji_font, bg_img
+    global window, clock, emoji_font, text_font, small_emoji_font, bg_img, kelp_img, rock_img
     pygame.init()
+    pygame.event.set_allowed([QUIT, KEYDOWN, KEYUP])
     window = pygame.display.set_mode((width, height))
     clock = pygame.time.Clock()
+
     emoji_font = pygame.font.SysFont('Segoe UI Emoji', 50)
     small_emoji_font = pygame.font.SysFont('Segoe UI Emoji', 20)
     text_font = pygame.font.Font(None, 50)
+
     pygame.display.set_caption('My First Pygame!')
-    bg_img = pygame.image.load('assets/background/ocean.png')
+
+    bg_img = pygame.image.load('assets/background/ocean.png').convert()
     bg_img = pygame.transform.scale(bg_img, (width, height))
+
+    kelp_img = pygame.image.load('assets/background/kelp.png').convert_alpha()
+    kelp_img = pygame.transform.scale(kelp_img, kelp_size)
+
+    rock_img = pygame.image.load('assets/background/rock.png').convert_alpha()
+    rock_img = pygame.transform.scale(rock_img, rock_size)
+
     while True:
         load_screen()
         play()
@@ -137,6 +156,7 @@ def load_screen():
 
 def play():
     bg_img_flipped = pygame.transform.flip(bg_img, True, False)
+    bg_objects = []
 
     obstacles = []
     items = []
@@ -162,13 +182,24 @@ def play():
 
     next_obstacle = random.randint(*obstacle_cooldown)
     obstacle_counter = 0
+
     next_item = random.randint(*item_cooldown)
     item_counter = 0
+
+    next_rock = random.randint(*rock_cooldown)
+    rock_counter = 0
+
+    next_kelp = random.randint(*kelp_cooldown)
+    kelp_counter = 0
+
     bg_x = 0
     bg_flipped = False
     while True:
+        # Spawn objects
         obstacle_counter += 1
         item_counter += 1
+        kelp_counter += 1
+        rock_counter += 1
         if obstacle_counter == next_obstacle:
             next_obstacle = random.randint(*obstacle_cooldown)
             obstacle_counter = 0
@@ -179,7 +210,18 @@ def play():
             item_counter = 0
             items.append(
                 [width+item_size[0]/2, random.randint(item_size[1]//2, height-item_size[1]//2)])
+        if rock_counter == next_rock:
+            next_rock = random.randint(*rock_cooldown)
+            rock_counter = 0
+            bg_objects.append(
+                ([width, height - rock_size[1]], rock_img))
+        if kelp_counter == next_kelp:
+            next_kelp = random.randint(*kelp_cooldown)
+            kelp_counter = 0
+            bg_objects.append(
+                ([width, height - kelp_size[1]], kelp_img))
 
+        # Check events
         for event in pygame.event.get():
             if event.type == QUIT:
                 quit()
@@ -192,6 +234,7 @@ def play():
                 elif event.key == K_ESCAPE:
                     quit()
 
+        # Move character
         if moveUp:
             vy += 1
         else:
@@ -211,22 +254,28 @@ def play():
                 angle = 0
                 vy = 0
 
+        # Update background objects
+        for pos, obj in bg_objects:
+            pos[0] -= vx
+        if bg_objects and bg_objects[0][0][0] < - max(rock_size[0], kelp_size[0]):
+            bg_objects.pop(0)
+
+            # Update obstacles and check collision
         collision_possible = True
         for obstacle in obstacles:
             # Update obstacle
             obstacle[0] -= vx
-
             # Check collision with player
             if collision_possible:
                 if (x + player_radious) < (obstacle[0] - obstacle_size[0] / 2):
                     collision_possible = False
                 if check_collision((x, y), player_radious, obstacle, *obstacle_size):
                     return
-
         # Obstacle is out of the screen
         if obstacles and obstacles[0][0] < -(obstacle_size[0] / 2):
             obstacles.pop(0)
 
+        # Update items and check collision
         collision_possible = True
         for i, item in enumerate(items):
             # Update item
@@ -254,8 +303,10 @@ def play():
             items.pop(0)
 
         # Render screen
+        # Reset window
         window.fill(white)
 
+        # Render background
         bg_x -= vx
         if bg_flipped:
             window.blit(bg_img_flipped, (bg_x, 0))
@@ -268,10 +319,17 @@ def play():
             bg_x += width
             bg_flipped ^= 1
 
+        # Render background objects
+        for pos, obj in bg_objects:
+            window.blit(obj, pos)
+
+        # Render obstacles and items
         for pos in obstacles:
             render_obstacle(pos)
         for pos in items:
             render_item(pos)
+
+        # Render player
         render_player((x, y), angle, small)
 
         pygame.display.update()
