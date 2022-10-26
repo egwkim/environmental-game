@@ -5,6 +5,11 @@ import os
 import sys
 from pygame.locals import *
 
+
+def scale_vector(vector, scale) -> tuple:
+    return tuple(i*scale for i in vector)
+
+
 width = 600
 height = 400
 fps = 30
@@ -15,6 +20,14 @@ green = (0, 255,   0)
 bg_color = (73, 183, 200)
 
 player_text = '🤔'
+player_size = (1000, 1000)
+player_center = (450, 470)
+player_radious = 150
+
+scale = 0.3
+player_size = scale_vector(player_size, scale)
+player_center = scale_vector(player_center, scale)
+player_radious *= scale
 
 obstacle_text = '💥'
 obstacle_cooldown = (15, 30)  # Min, max frames between two obstacles
@@ -24,11 +37,30 @@ item_cooldown = (120, 180)
 
 rock_cooldown = (30, 90)
 # Original size: 705x224
-rock_size = (235, 74)
+rock_size = scale_vector((705, 224), 1/3)
+
 
 kelp_cooldown = (20, 50)
 # Original size: 312x283
-kelp_size = (78, 71)
+kelp_size = scale_vector((312, 283), 1/4)
+
+
+banana_cooldown = (100, 100)
+# Original size and polygon hitbox
+banana_size = (1280, 1280)
+banana_hitbox = ((410, -1040), (60, -300), (1250, -520))
+# Scale down
+scale = 0.2
+banana_size = scale_vector(banana_size, 0.2)
+banana_hitbox = (scale_vector(i, scale_vector) for i in banana_hitbox)
+
+
+can_cooldown = (100, 100)
+# Original size and hitbox
+can_size = (636, 1050)
+# Scale down
+scale = 0.2
+can_size = scale_vector(can_size, scale)
 
 
 def resource_path(relative_path):
@@ -46,7 +78,8 @@ def load_img(relative_path):
 
 
 def main():
-    global window, clock, emoji_font, text_font, small_emoji_font, bg_img, kelp_img, rock_img
+    global window, clock, emoji_font, text_font, small_emoji_font, imgs
+    # Init game
     pygame.init()
     pygame.event.set_allowed([QUIT, KEYDOWN, KEYUP])
     window = pygame.display.set_mode((width, height))
@@ -58,15 +91,27 @@ def main():
 
     pygame.display.set_caption('My First Pygame!')
 
-    bg_img = load_img('assets/background/ocean.png').convert()
-    bg_img = pygame.transform.scale(bg_img, (width, height))
+    # Load images
+    imgs = {}
+    imgs['bg'] = load_img('assets/background/ocean.png').convert()
+    imgs['bg'] = pygame.transform.scale(imgs['bg'], (width, height))
 
-    kelp_img = load_img('assets/background/kelp.png').convert_alpha()
-    kelp_img = pygame.transform.scale(kelp_img, kelp_size)
+    imgs['kelp'] = load_img('assets/background/kelp.png').convert_alpha()
+    imgs['kelp'] = pygame.transform.scale(imgs['kelp'], kelp_size)
 
-    rock_img = load_img('assets/background/rock.png').convert_alpha()
-    rock_img = pygame.transform.scale(rock_img, rock_size)
+    imgs['rock'] = load_img('assets/background/rock.png').convert_alpha()
+    imgs['rock'] = pygame.transform.scale(imgs['rock'], rock_size)
 
+    imgs['banana'] = load_img('assets/obstacle/banana.png').convert_alpha()
+    imgs['banana'] = pygame.transform.scale(imgs['banana'], banana_size)
+
+    imgs['can'] = load_img('assets/obstacle/can.png').convert_alpha()
+    imgs['can'] = pygame.transform.scale(imgs['can'], can_size)
+
+    imgs['player'] = load_img('assets/player.png').convert_alpha()
+    imgs['player'] = pygame.transform.scale(imgs['player'], player_size)
+
+    # Play game
     while True:
         load_screen()
         play()
@@ -76,10 +121,10 @@ def main():
     quit()
 
 
-def check_collision(pos1, radious, pos2, width, height):
+def check_collision_circle_rect(center, radious, pos, width, height):
     # Check collision between a circle and a rectangle.
-    x_diff = abs(pos1[0] - pos2[0])
-    y_diff = abs(pos1[1] - pos2[1])
+    x_diff = abs(center[0] - pos[0])
+    y_diff = abs(center[1] - pos[1])
 
     if x_diff > (radious + width/2) or y_diff > (radious + height/2):
         return False
@@ -90,25 +135,39 @@ def check_collision(pos1, radious, pos2, width, height):
     return ((x_diff-width/2)**2 + (y_diff-height/2)**2) <= radious
 
 
+def add_vector(v1, v2):
+    return (v1[i] + v2[i] for i in range(len(v1)))
+
+
+def dist_square(pos1, pos2):
+    return (pos1[0] - pos2[0])**2 + (pos1[1] - pos2[1])**2
+
+
+def check_collision_circle_polygon(center, radious, pos, verticies):
+    for i in len(verticies):
+        if dist_square(center, add_vector(verticies[i], pos)) < radious**2:
+            return True
+        x1, y1 = center
+        x2, y2 = add_vector(verticies[i-1], pos)
+        x3, y3 = add_vector(verticies[i], pos)
+        if math.abs(x1*(y2-y3) - y1*(x2-x3) + x2*y3+x3*y2) < radious * (dist_square(verticies[i-1], verticies[i])**.5):
+            return True
+    return False
+
+
 def draw_rect_angle(surf, rect, pivot, angle, color):
     pts = [rect.topleft, rect.topright, rect.bottomright, rect.bottomleft]
     pts = [(pygame.math.Vector2(p) - pivot).rotate(-angle) + pivot for p in pts]
     pygame.draw.lines(surf, color, True, pts, 3)
 
 
-def render_player(pos, angle=0, small=False, color=black):
-    if small:
-        player = small_emoji_font.render(player_text, 1, color)
-    else:
-        player = emoji_font.render(player_text, 1, color)
-    player_rect_original = player.get_rect()
-    player_rect_original.center = pos
-    player = pygame.transform.rotate(player, angle)
-    player_rect = player.get_rect()
+def render_player(pos, angle=0):
+    rotated_player = pygame.transform.rotate(imgs['player'], angle)
+    player_rect = rotated_player.get_rect()
     player_rect.center = pos
 
-    window.blit(player, player_rect)
-    pygame.draw.circle(window, green, pos, player_rect_original.height/2, 2)
+    window.blit(rotated_player, player_rect)
+    pygame.draw.circle(window, green, pos, player_radious, 2)
 
 
 def render_obstacle(pos, color=black):
@@ -138,7 +197,7 @@ def load_screen():
                 if event.key == K_ESCAPE:
                     quit()
         window.fill(white)
-        window.blit(bg_img, (0, 0))
+        window.blit(imgs['bg'], (0, 0))
         render_player((i, height / 2))
         pygame.display.update()
         clock.tick(fps)
@@ -156,7 +215,7 @@ def load_screen():
                 if event.key == K_ESCAPE:
                     quit()
         window.fill(white)
-        window.blit(bg_img, (0, 0))
+        window.blit(imgs['bg'], (0, 0))
 
         i += 1
         if i < 25:
@@ -170,7 +229,7 @@ def load_screen():
 
 
 def play():
-    bg_img_flipped = pygame.transform.flip(bg_img, True, False)
+    imgs['bg_flipped'] = pygame.transform.flip(imgs['bg'], True, False)
     bg_objects = []
 
     obstacles = []
@@ -229,12 +288,12 @@ def play():
             next_rock = random.randint(*rock_cooldown)
             rock_counter = 0
             bg_objects.append(
-                ([width, height - rock_size[1]], rock_img))
+                ([width, height - rock_size[1]], imgs['rock']))
         if kelp_counter == next_kelp:
             next_kelp = random.randint(*kelp_cooldown)
             kelp_counter = 0
             bg_objects.append(
-                ([width, height - kelp_size[1]], kelp_img))
+                ([width, height - kelp_size[1]], imgs['kelp']))
 
         # Check events
         for event in pygame.event.get():
@@ -284,7 +343,7 @@ def play():
             if collision_possible:
                 if (x + player_radious) < (obstacle[0] - obstacle_size[0] / 2):
                     collision_possible = False
-                if check_collision((x, y), player_radious, obstacle, *obstacle_size):
+                if check_collision_circle_rect((x, y), player_radious, obstacle, *obstacle_size):
                     return
         # Obstacle is out of the screen
         if obstacles and obstacles[0][0] < -(obstacle_size[0] / 2):
@@ -300,7 +359,7 @@ def play():
             if collision_possible:
                 if (x + player_radious) < (item[0] - item_size[0] / 2):
                     collision_possible = False
-                if check_collision((x, y), player_radious, item, *item_size):
+                if check_collision_circle_rect((x, y), player_radious, item, *item_size):
                     # Remove item
                     items.pop(i)
 
@@ -324,11 +383,11 @@ def play():
         # Render background
         bg_x -= vx
         if bg_flipped:
-            window.blit(bg_img_flipped, (bg_x, 0))
-            window.blit(bg_img, (width+bg_x, 0))
+            window.blit(imgs['bg_flipped'], (bg_x, 0))
+            window.blit(imgs['bg'], (width+bg_x, 0))
         else:
-            window.blit(bg_img, (bg_x, 0))
-            window.blit(bg_img_flipped, (width+bg_x, 0))
+            window.blit(imgs['bg'], (bg_x, 0))
+            window.blit(imgs['bg_flipped'], (width+bg_x, 0))
 
         if bg_x <= -width:
             bg_x += width
@@ -345,7 +404,7 @@ def play():
             render_item(pos)
 
         # Render player
-        render_player((x, y), angle, small)
+        render_player((x, y), angle)
 
         pygame.display.update()
         clock.tick(fps)

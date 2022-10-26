@@ -8,7 +8,7 @@ a = Analysis(
     ['game.py'],
     pathex=[],
     binaries=[],
-    datas=[('assets/background/*.png', 'assets/background'), ('assets/obstacle/*.png', 'assets/obstacle')],
+    datas=[('assets/background/*.png', 'assets/background'), ('assets/obstacle/*.png', 'assets/obstacle'), ('assets/*.png', 'assets')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
