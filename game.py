@@ -20,8 +20,8 @@ green = (0, 255,   0)
 bg_color = (73, 183, 200)
 
 player_text = '🤔'
-player_size = (1000, 1000)
-player_center = (450, 470)
+player_size = (545, 545)
+player_center = scale_vector(player_size, .5)
 player_radious = 150
 
 scale = 0.3
