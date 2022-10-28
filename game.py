@@ -5,14 +5,16 @@ import os
 import sys
 from pygame.locals import *
 
-
-def scale_vector(vector, scale) -> tuple:
-    return tuple(i*scale for i in vector)
-
+debug = False
 
 width = 600
 height = 400
 fps = 30
+
+
+def scale_vector(vector, scale) -> tuple:
+    return tuple(i*scale for i in vector)
+
 
 white = (255, 255, 255)
 black = (0,   0,   0)
@@ -50,16 +52,16 @@ banana_cooldown = (100, 100)
 banana_size = (1280, 1280)
 banana_hitbox = ((410, -1040), (60, -300), (1250, -520))
 # Scale down
-scale = 0.2
-banana_size = scale_vector(banana_size, 0.2)
-banana_hitbox = (scale_vector(i, scale_vector) for i in banana_hitbox)
+scale = 0.05
+banana_size = scale_vector(banana_size, scale)
+banana_hitbox = (scale_vector(i, scale) for i in banana_hitbox)
 
 
 can_cooldown = (100, 100)
 # Original size and hitbox
 can_size = (636, 1050)
 # Scale down
-scale = 0.2
+scale = 0.05
 can_size = scale_vector(can_size, scale)
 
 
@@ -167,7 +169,8 @@ def render_player(pos, angle=0):
     player_rect.center = pos
 
     window.blit(rotated_player, player_rect)
-    pygame.draw.circle(window, green, pos, player_radious, 2)
+    if debug:
+        pygame.draw.circle(window, green, pos, player_radious, 2)
 
 
 def render_obstacle(pos, color=black):
@@ -176,7 +179,8 @@ def render_obstacle(pos, color=black):
     obstacle_rect.center = pos
 
     window.blit(obstacle, obstacle_rect)
-    draw_rect_angle(window, obstacle_rect, pos, 0, green)
+    if debug:
+        draw_rect_angle(window, obstacle_rect, pos, 0, green)
 
 
 def render_item(pos, color=black):
@@ -424,6 +428,19 @@ def game_over():
 def quit():
     pygame.quit()
     sys.exit()
+
+
+def thumbnail():
+    window.fill(white)
+    window.blit(imgs['bg'], (0, 0))
+    window.blit(imgs['rock'], (width / 2, height - rock_size[1]))
+    window.blit(imgs['kelp'], (width / 3 - 20, height - kelp_size[1]))
+    window.blit(imgs['kelp'], (width / 2 + 40, height - kelp_size[1]))
+    window.blit(imgs['can'], (width / 2, height / 3))
+    render_player((100, height/2), 10)
+    pygame.display.update()
+    for i in range(fps * 3):
+        clock.tick(fps)
 
 
 if __name__ == '__main__':
