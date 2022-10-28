@@ -89,7 +89,7 @@ def main():
     small_emoji_font = pygame.font.SysFont('Segoe UI Emoji', 20)
     text_font = pygame.font.Font(None, 50)
 
-    pygame.display.set_caption('My First Pygame!')
+    pygame.display.set_caption('Save the sea!')
 
     # Load images
     imgs = {}
