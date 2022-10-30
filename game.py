@@ -42,7 +42,7 @@ kelp_cooldown = (20, 50)
 kelp_size = scale_vector((312, 283), 1/4)
 
 
-obstacle_cooldown = (100, 100)
+obstacle_cooldown = (5, 25)
 
 # banana_cooldown = (100, 100)
 # Original size and polygon hitbox
@@ -224,7 +224,7 @@ def load_screen():
 
 
 def play():
-    time = 20 * fps  # Play time
+    time = 30 * fps  # Play time
 
     imgs['bg_flipped'] = pygame.transform.flip(imgs['bg'], True, False)
     bg_objects = []
@@ -321,27 +321,24 @@ def play():
 
         # Update obstacles and check collision
         collision_possible = True
-        for i, obstacle in enumerate(obstacles):
+        for obstacle in obstacles:
             # Update obstacle
             obstacle[0] -= vx
 
+        for i, obstacle in enumerate(obstacles):
             # Check collision with player
-            if collision_possible:
-                if (x + player_radious) < (obstacle[0] - max(banana_size[0], can_size[0]) / 2):
-                    collision_possible = False
-                    continue
-                if obstacle[2] == 'banana':
-                    if check_collision_circle_polygon((x, y), player_radious, obstacle[:2], banana_hitbox):
-                        score += 1
-                        obstacles.pop(i)
-                        collision_possible = False
-                        continue
-                elif obstacle[2] == 'can':
-                    if check_collision_circle_rect((x, y), player_radious, obstacle[:2], *can_size):
-                        score += 1
-                        obstacles.pop(i)
-                        collision_possible = False
-                        continue
+            if (x + player_radious) < (obstacle[0] - max(banana_size[0], can_size[0]) / 2):
+                break
+            if obstacle[2] == 'banana':
+                if check_collision_circle_polygon((x, y), player_radious, obstacle[:2], banana_hitbox):
+                    score += 1
+                    obstacles.pop(i)
+                    break
+            elif obstacle[2] == 'can':
+                if check_collision_circle_rect((x, y), player_radious, obstacle[:2], *can_size):
+                    score += 1
+                    obstacles.pop(i)
+                    break
 
         # Obstacle is out of the screen
         if obstacles and obstacles[0][0] < -(max(can_size[0], banana_size[0]) / 2):
@@ -390,7 +387,7 @@ def play():
             return game_over(score)
 
 
-def game_over(score:int=0):
+def game_over(score: int = 0):
     text = text_font.render(f'Game over... Score: {score}', 1, black)
     rect = text.get_rect()
     rect.center = (width/2, height/2)
