@@ -150,8 +150,10 @@ def check_collision_circle_polygon(center, radious, pos, verticies):
         x1, y1 = center
         x2, y2 = add_vector(verticies[i-1], pos)
         x3, y3 = add_vector(verticies[i], pos)
-        if abs(x1*(y2-y3) - y1*(x2-x3) + x2*y3+x3*y2) < radious * (dist_square(verticies[i-1], verticies[i])**.5):
-            return True
+        t = x1*(x2-x3) + y1*(y2-y3) + x2*x3 + y2*y3
+        if (t - x2*x2 - y2*y2) * (t - x3*x3 - y3*y3) < 0:
+            if abs(x1*(y2-y3) - y1*(x2-x3) + x2*y3+x3*y2) < radious * (dist_square(verticies[i-1], verticies[i])**.5):
+                return True
     return False
 
 
