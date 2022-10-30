@@ -7,8 +7,8 @@ from pygame.locals import *
 
 debug = True
 
-width = 600
-height = 400
+width = 1280
+height = 720
 fps = 30
 
 
@@ -26,7 +26,7 @@ player_size = (545, 545)
 player_center = scale_vector(player_size, .5)
 player_radious = 120
 
-scale = 0.3
+scale = 0.5
 player_size = scale_vector(player_size, scale)
 player_center = scale_vector(player_center, scale)
 player_radious *= scale
@@ -34,22 +34,22 @@ player_radious *= scale
 
 rock_cooldown = (30, 90)
 # Original size: 705x224
-rock_size = scale_vector((705, 224), 1/3)
+rock_size = scale_vector((705, 224), 2/3)
 
 
 kelp_cooldown = (20, 50)
 # Original size: 312x283
-kelp_size = scale_vector((312, 283), 1/4)
+kelp_size = scale_vector((312, 283), 1/2)
 
 
-obstacle_cooldown = (5, 25)
+obstacle_cooldown = (5, 20)
 
 # banana_cooldown = (100, 100)
 # Original size and polygon hitbox
 banana_size = (1280, 1280)
 banana_hitbox = ((410, -1040), (60, -300), (1250, -520))
 # Scale down
-scale = 0.05
+scale = 0.1
 banana_size = scale_vector(banana_size, scale)
 banana_hitbox = tuple(scale_vector(i, scale) for i in banana_hitbox)
 # Match center
@@ -61,7 +61,7 @@ banana_hitbox = tuple(
 # Original size and hitbox
 can_size = (636, 1050)
 # Scale down
-scale = 0.05
+scale = 0.1
 can_size = scale_vector(can_size, scale)
 
 
@@ -87,8 +87,8 @@ def main():
     window = pygame.display.set_mode((width, height))
     clock = pygame.time.Clock()
 
-    text_font = pygame.font.Font(None, 50)
-    score_font = pygame.font.Font(None, 40)
+    text_font = pygame.font.Font(None, 100)
+    score_font = pygame.font.Font(None, 70)
 
     pygame.display.set_caption('Save the sea!')
 
@@ -184,7 +184,9 @@ def render_player(pos, angle=0):
 
 
 def load_screen():
-    for i in range(0, 101, 10):
+    # TODO show intro
+
+    for i in range(-10, 201, 15):
         for event in pygame.event.get():
             if event.type == QUIT:
                 quit()
@@ -218,7 +220,7 @@ def load_screen():
         elif i == 50:
             i = 0
 
-        render_player((100, height / 2))
+        render_player((200, height / 2))
         pygame.display.update()
         clock.tick(fps)
 
@@ -235,9 +237,9 @@ def play():
     max_y = height - player_radious
     min_y = player_radious
 
-    x = 100
+    x = 200
     y = height / 2
-    vx = 10
+    vx = 15
     vy = 0
 
     moveUp = True
@@ -295,9 +297,9 @@ def play():
 
         # Move character
         if moveUp:
-            vy += 1
+            vy += 1.5
         else:
-            vy -= 1
+            vy -= 1.5
 
         angle = math.degrees(math.atan(vy/vx))
         y -= vy
@@ -388,6 +390,8 @@ def play():
 
 
 def game_over(score: int = 0):
+    # TODO show outro
+
     text = text_font.render(f'Game over... Score: {score}', 1, black)
     rect = text.get_rect()
     rect.center = (width/2, height/2)
