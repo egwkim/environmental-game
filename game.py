@@ -80,16 +80,15 @@ def load_img(relative_path):
 
 
 def main():
-    global window, clock, emoji_font, text_font, small_emoji_font, imgs
+    global window, clock, text_font, score_font, imgs
     # Init game
     pygame.init()
     pygame.event.set_allowed([QUIT, KEYDOWN, KEYUP])
     window = pygame.display.set_mode((width, height))
     clock = pygame.time.Clock()
 
-    emoji_font = pygame.font.SysFont('Segoe UI Emoji', 50)
-    small_emoji_font = pygame.font.SysFont('Segoe UI Emoji', 20)
     text_font = pygame.font.Font(None, 50)
+    score_font = pygame.font.Font(None, 40)
 
     pygame.display.set_caption('Save the sea!')
 
@@ -116,8 +115,7 @@ def main():
     # Play game
     while True:
         load_screen()
-        play()
-        retry = game_over()
+        retry = play()
         if not retry:
             break
     quit()
@@ -226,6 +224,8 @@ def load_screen():
 
 
 def play():
+    time = 20 * fps  # Play time
+
     imgs['bg_flipped'] = pygame.transform.flip(imgs['bg'], True, False)
     bg_objects = []
 
@@ -375,12 +375,23 @@ def play():
         # Render player
         render_player((x, y), angle)
 
+        # Render score
+        score_text = score_font.render(str(score), 1, black)
+        score_rect = score_text.get_rect()
+        score_rect.top = 15
+        score_rect.right = width - 20
+        window.blit(score_text, score_rect)
+
         pygame.display.update()
         clock.tick(fps)
 
+        time -= 1
+        if time == 0:
+            return game_over(score)
 
-def game_over():
-    text = text_font.render('Game over', 1, black)
+
+def game_over(score:int=0):
+    text = text_font.render(f'Game over... Score: {score}', 1, black)
     rect = text.get_rect()
     rect.center = (width/2, height/2)
     window.fill(bg_color)
