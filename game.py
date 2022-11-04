@@ -79,21 +79,8 @@ def load_img(relative_path):
     return pygame.image.load(resource_path(relative_path))
 
 
-def main():
-    global window, clock, text_font, score_font, imgs
-    # Init game
-    pygame.init()
-    pygame.event.set_allowed([QUIT, KEYDOWN, KEYUP])
-    window = pygame.display.set_mode((width, height))
-    clock = pygame.time.Clock()
-
-    text_font = pygame.font.Font(None, 100)
-    score_font = pygame.font.Font(None, 70)
-
-    pygame.display.set_caption('Save the sea!')
-
+def load_imgs():
     # Load images
-    imgs = {}
     imgs['bg'] = load_img('assets/background/ocean.png').convert()
     imgs['bg'] = pygame.transform.scale(imgs['bg'], (width, height))
 
@@ -112,12 +99,36 @@ def main():
     imgs['player'] = load_img('assets/player.png').convert_alpha()
     imgs['player'] = pygame.transform.scale(imgs['player'], player_size)
 
+    imgs['title'] = load_img('assets/scenes/title.png').convert()
+    for i in range(1, 4):
+        imgs[f'intro{i}'] = load_img(f'assets/scenes/intro{i}.png').convert()
+        imgs[f'outro{i}'] = load_img(f'assets/scenes/outro{i}.png').convert()
+
+
+def main():
+    global window, clock, text_font, score_font, imgs
+    # Init game
+    pygame.init()
+    pygame.event.set_allowed([QUIT, KEYDOWN, KEYUP])
+    window = pygame.display.set_mode((width, height))
+    clock = pygame.time.Clock()
+
+    text_font = pygame.font.Font(None, 100)
+    score_font = pygame.font.Font(None, 70)
+
+    pygame.display.set_caption('Save the sea!')
+
+    imgs = {}
+    load_imgs()
+
     # Play game
+    intro()
     while True:
         load_screen()
         retry = play()
         if not retry:
             break
+    outro()
     quit()
 
 
@@ -185,9 +196,43 @@ def render_player(pos, angle=0):
         pygame.draw.circle(window, green, pos, player_radius, 2)
 
 
-def load_screen():
-    # TODO show intro
+def wait(time: int, space_to_continue: bool = False):
+    def tick():
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                quit()
+            elif event.type == KEYDOWN:
+                if space_to_continue and event.key == K_SPACE:
+                    return True
+                if event.key == K_ESCAPE:
+                    quit()
+        clock.tick(fps)
+        return False
 
+    if time > 0:
+        for i in range(fps * time):
+            if tick():
+                return
+    else:
+        while 1:
+            if tick():
+                return
+
+
+def intro():
+    # Title screen
+    window.blit(imgs['title'], (0, 0))
+    pygame.display.update()
+    wait(-1, True)
+
+    # Show intro
+    for i in range(1, 4):
+        window.blit(imgs[f'intro{i}'], (0, 0))
+        pygame.display.update()
+        wait(2, True)
+
+
+def load_screen():
     for i in range(-10, 201, 15):
         for event in pygame.event.get():
             if event.type == QUIT:
@@ -392,12 +437,15 @@ def play():
 
 
 def game_over(score: int = 0):
-    # TODO show outro
-
-    text = text_font.render(f'Game over... Score: {score}', 1, black)
+    window.fill(bg_color)
+    text = text_font.render(f'Score: {score}', 1, black)
     rect = text.get_rect()
     rect.center = (width/2, height/2)
-    window.fill(bg_color)
+    window.blit(text, rect)
+
+    text = text_font.render(f'Press Space to retry', 1, black)
+    rect = text.get_rect()
+    rect.center = (width/2, height/2 + rect.height)
     window.blit(text, rect)
     pygame.display.update()
     while True:
@@ -410,8 +458,19 @@ def game_over(score: int = 0):
                     return True
                 elif event.key == K_ESCAPE:
                     # Quit
+                    quit()
+                else:
+                    # Show outro and quit
                     return False
         clock.tick(fps)
+
+
+def outro():
+    for i in range(1, 4):
+        window.fill(white)
+        window.blit(imgs[f'outro{i}'], (0, 0))
+        pygame.display.update()
+        wait(5, True)
 
 
 def quit():
