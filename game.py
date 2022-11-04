@@ -24,12 +24,12 @@ bg_color = (73, 183, 200)
 
 player_size = (545, 545)
 player_center = scale_vector(player_size, .5)
-player_radious = 120
+player_radius = 120
 
 scale = 0.5
 player_size = scale_vector(player_size, scale)
 player_center = scale_vector(player_center, scale)
-player_radious *= scale
+player_radius *= scale
 
 
 rock_cooldown = (30, 90)
@@ -42,7 +42,7 @@ kelp_cooldown = (20, 50)
 kelp_size = scale_vector((312, 283), 1/2)
 
 
-obstacle_cooldown = (5, 20)
+litter_cooldown = (5, 20)
 
 # banana_cooldown = (100, 100)
 # Original size and polygon hitbox
@@ -103,10 +103,10 @@ def main():
     imgs['rock'] = load_img('assets/background/rock.png').convert_alpha()
     imgs['rock'] = pygame.transform.scale(imgs['rock'], rock_size)
 
-    imgs['banana'] = load_img('assets/obstacle/banana.png').convert_alpha()
+    imgs['banana'] = load_img('assets/litters/banana.png').convert_alpha()
     imgs['banana'] = pygame.transform.scale(imgs['banana'], banana_size)
 
-    imgs['can'] = load_img('assets/obstacle/can.png').convert_alpha()
+    imgs['can'] = load_img('assets/litters/can.png').convert_alpha()
     imgs['can'] = pygame.transform.scale(imgs['can'], can_size)
 
     imgs['player'] = load_img('assets/player.png').convert_alpha()
@@ -121,18 +121,18 @@ def main():
     quit()
 
 
-def check_collision_circle_rect(center, radious, pos, width, height):
+def check_collision_circle_rect(center, radius, pos, width, height):
     # Check collision between a circle and a rectangle.
     x_diff = abs(center[0] - pos[0])
     y_diff = abs(center[1] - pos[1])
 
-    if x_diff > (radious + width/2) or y_diff > (radious + height/2):
+    if x_diff > (radius + width/2) or y_diff > (radius + height/2):
         return False
 
     if x_diff <= width/2 or y_diff <= height/2:
         return True
 
-    return ((x_diff-width/2)**2 + (y_diff-height/2)**2) <= radious**2
+    return ((x_diff-width/2)**2 + (y_diff-height/2)**2) <= radius**2
 
 
 def add_vector(v1, v2):
@@ -143,16 +143,16 @@ def dist_square(pos1, pos2):
     return (pos1[0] - pos2[0])**2 + (pos1[1] - pos2[1])**2
 
 
-def check_collision_circle_polygon(center, radious, pos, verticies):
-    for i in range(len(verticies)):
-        if dist_square(center, add_vector(verticies[i], pos)) < radious**2:
+def check_collision_circle_polygon(center, radius, pos, vertices):
+    for i in range(len(vertices)):
+        if dist_square(center, add_vector(vertices[i], pos)) < radius**2:
             return True
         x1, y1 = center
-        x2, y2 = add_vector(verticies[i-1], pos)
-        x3, y3 = add_vector(verticies[i], pos)
+        x2, y2 = add_vector(vertices[i-1], pos)
+        x3, y3 = add_vector(vertices[i], pos)
         t = x1*(x2-x3) + y1*(y2-y3) + x2*x3 + y2*y3
         if (t - x2*x2 - y2*y2) * (t - x3*x3 - y3*y3) < 0:
-            if abs(x1*(y2-y3) - y1*(x2-x3) + x2*y3+x3*y2) < radious * (dist_square(verticies[i-1], verticies[i])**.5):
+            if abs(x1*(y2-y3) - y1*(x2-x3) + x2*y3+x3*y2) < radius * (dist_square(vertices[i-1], vertices[i])**.5):
                 return True
     return False
 
@@ -163,7 +163,7 @@ def draw_rect_angle(surf, rect, pivot, angle, color):
     pygame.draw.lines(surf, color, True, pts, 3)
 
 
-def render_obstacle(x: float, y: float, type: str):
+def render_litter(x: float, y: float, type: str):
     rect = imgs[type].get_rect(center=(x, y))
     window.blit(imgs[type], rect)
 
@@ -182,7 +182,7 @@ def render_player(pos, angle=0):
 
     window.blit(rotated_player, player_rect)
     if debug:
-        pygame.draw.circle(window, green, pos, player_radious, 2)
+        pygame.draw.circle(window, green, pos, player_radius, 2)
 
 
 def load_screen():
@@ -233,11 +233,11 @@ def play():
     imgs['bg_flipped'] = pygame.transform.flip(imgs['bg'], True, False)
     bg_objects = []
 
-    # List of list containing 3 items: x, y coordinates and type of the obstacle
-    obstacles = []
+    # List of list containing 3 items: x, y coordinates and type of the litter
+    litters = []
 
-    max_y = height - player_radious
-    min_y = player_radious
+    max_y = height - player_radius
+    min_y = player_radius
 
     x = 200
     y = height / 2
@@ -248,8 +248,8 @@ def play():
 
     score = 0
 
-    next_obstacle = random.randint(*obstacle_cooldown)
-    obstacle_counter = 0
+    next_litter = random.randint(*litter_cooldown)
+    litter_counter = 0
 
     next_rock = random.randint(*rock_cooldown)
     rock_counter = 0
@@ -261,17 +261,17 @@ def play():
     bg_flipped = False
     while True:
         # Spawn objects
-        obstacle_counter += 1
+        litter_counter += 1
         kelp_counter += 1
         rock_counter += 1
-        if obstacle_counter == next_obstacle:
-            next_obstacle = random.randint(*obstacle_cooldown)
-            obstacle_counter = 0
+        if litter_counter == next_litter:
+            next_litter = random.randint(*litter_cooldown)
+            litter_counter = 0
             if random.randint(0, 1):
-                obstacles.append([width+banana_size[0]/2, random.randint(
+                litters.append([width+banana_size[0]/2, random.randint(
                     banana_size[1]//2, height-banana_size[1]//2), 'banana'])
             else:
-                obstacles.append(
+                litters.append(
                     [width+can_size[0]/2, random.randint(can_size[1]//2, height-can_size[1]//2), 'can'])
         if rock_counter == next_rock:
             next_rock = random.randint(*rock_cooldown)
@@ -323,30 +323,30 @@ def play():
         if bg_objects and bg_objects[0][0][0] < - max(rock_size[0], kelp_size[0]):
             bg_objects.pop(0)
 
-        # Update obstacles and check collision
+        # Update litters and check collision
         collision_possible = True
-        for obstacle in obstacles:
-            # Update obstacle
-            obstacle[0] -= vx
+        for litter in litters:
+            # Update litter
+            litter[0] -= vx
 
-        for i, obstacle in enumerate(obstacles):
+        for i, litter in enumerate(litters):
             # Check collision with player
-            if (x + player_radious) < (obstacle[0] - max(banana_size[0], can_size[0]) / 2):
+            if (x + player_radius) < (litter[0] - max(banana_size[0], can_size[0]) / 2):
                 break
-            if obstacle[2] == 'banana':
-                if check_collision_circle_polygon((x, y), player_radious, obstacle[:2], banana_hitbox):
+            if litter[2] == 'banana':
+                if check_collision_circle_polygon((x, y), player_radius, litter[:2], banana_hitbox):
                     score += 1
-                    obstacles.pop(i)
+                    litters.pop(i)
                     break
-            elif obstacle[2] == 'can':
-                if check_collision_circle_rect((x, y), player_radious, obstacle[:2], *can_size):
+            elif litter[2] == 'can':
+                if check_collision_circle_rect((x, y), player_radius, litter[:2], *can_size):
                     score += 1
-                    obstacles.pop(i)
+                    litters.pop(i)
                     break
 
-        # Obstacle is out of the screen
-        if obstacles and obstacles[0][0] < -(max(can_size[0], banana_size[0]) / 2):
-            obstacles.pop(0)
+        # litter is out of the screen
+        if litters and litters[0][0] < -(max(can_size[0], banana_size[0]) / 2):
+            litters.pop(0)
 
         # Render screen
         # Reset window
@@ -369,9 +369,9 @@ def play():
         for pos, obj in bg_objects:
             window.blit(obj, pos)
 
-        # Render obstacles
-        for obstacle in obstacles:
-            render_obstacle(*obstacle)
+        # Render litters
+        for litter in litters:
+            render_litter(*litter)
 
         # Render player
         render_player((x, y), angle)
