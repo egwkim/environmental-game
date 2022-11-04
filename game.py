@@ -5,7 +5,7 @@ import os
 import sys
 from pygame.locals import *
 
-debug = True
+debug = False
 
 width = 1280
 height = 720
