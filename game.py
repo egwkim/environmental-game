@@ -42,7 +42,7 @@ kelp_cooldown = (20, 50)
 kelp_size = scale_vector((312, 283), 1/2)
 
 
-litter_cooldown = (5, 20)
+litter_cooldown = (1, 3)
 
 # banana_cooldown = (100, 100)
 # Original size and polygon hitbox
@@ -55,7 +55,6 @@ banana_hitbox = tuple(scale_vector(i, scale) for i in banana_hitbox)
 # Match center
 banana_hitbox = tuple(
     (x - banana_size[0]/2, y + banana_size[1]/2) for x, y in banana_hitbox)
-
 
 # can_cooldown = (100, 100)
 # Original size and hitbox
@@ -312,7 +311,7 @@ def play():
         if litter_counter == next_litter:
             next_litter = random.randint(*litter_cooldown)
             litter_counter = 0
-            if random.randint(0, 1):
+            if not random.randint(0, 9):
                 litters.append([width+banana_size[0]/2, random.randint(
                     banana_size[1]//2, height-banana_size[1]//2), 'banana'])
             else:
@@ -422,7 +421,7 @@ def play():
         render_player((x, y), angle)
 
         # Render score
-        score_text = score_font.render(str(score), 1, black)
+        score_text = score_font.render(f'Time: {time//fps:> 2}    Score: {score:> 3}', 1, black)
         score_rect = score_text.get_rect()
         score_rect.top = 15
         score_rect.right = width - 20
@@ -443,7 +442,7 @@ def game_over(score: int = 0):
     rect.center = (width/2, height/2)
     window.blit(text, rect)
 
-    text = text_font.render(f'Press Space to retry', 1, black)
+    text = text_font.render(f'Press R to retry, ESC to exit', 1, black)
     rect = text.get_rect()
     rect.center = (width/2, height/2 + rect.height)
     window.blit(text, rect)
@@ -453,13 +452,10 @@ def game_over(score: int = 0):
             if event.type == QUIT:
                 quit()
             elif event.type == KEYDOWN:
-                if event.key == K_SPACE:
+                if event.key == K_r:
                     # Retry
                     return True
                 elif event.key == K_ESCAPE:
-                    # Quit
-                    quit()
-                else:
                     # Show outro and quit
                     return False
         clock.tick(fps)
